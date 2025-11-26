@@ -1,6 +1,8 @@
 from rest_framework import generics
 from .models import Producto, Ubicacion, Stock, MovimientoInventario
-from .serializers import ProductoSerializer, UbicacionSerializer
+from .serializers import ProductoSerializer, UbicacionSerializer, MovimientoInventarioSerializer
+from django.utils import timezone
+from datetime import datetime
 
 # Vista para listar todos los productos
 class ProductoListAPIView(generics.ListAPIView):
@@ -281,5 +283,259 @@ def ventas_diarias_csv(request):
         'errores': errores
     }, status=status.HTTP_200_OK)
 
+
+# ... (código anterior) ...
+
+from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework import status
+
+# ... (vistas anteriores) ...
+
+class TrazabilidadProductoAPIView(generics.ListAPIView):
+    """
+    API View para obtener la trazabilidad completa (Kardex) de un producto.
+    Se espera un código de producto en la URL, ej: /api/trazabilidad/BI0001BL/
+    """
+    serializer_class = MovimientoInventarioSerializer
+
+    def get_queryset(self):
+        """
+        Filtra los movimientos para el producto especificado en la URL.
+        """
+        cod_venta = self.kwargs['cod_venta']
+        # Filtra por el código de venta y ordena por fecha descendente
+        return MovimientoInventario.objects.filter(producto__cod_venta=cod_venta).order_by('-fecha_hora')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response({'error': f'No se encontraron movimientos para el producto con código {self.kwargs["cod_venta"]}'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
    
 
+# ... (código anterior) ...
+
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def dashboard_data(request):
+    """
+    Endpoint para obtener los datos resumidos para el Dashboard Ejecutivo.
+    """
+    # 1. Evolución de Ventas Mensuales
+    ventas_mensuales = MovimientoInventario.objects.filter(
+        tipo=MovimientoInventario.TIPO_VENTA
+    ).annotate(
+        mes=TruncMonth('fecha_hora')
+    ).values('mes').annotate(
+        total_ventas=Sum('cantidad')
+    ).order_by('mes')
+
+    # 2. Top 5 Productos Más Vendidos
+    top_vendidos = MovimientoInventario.objects.filter(
+        tipo=MovimientoInventario.TIPO_VENTA
+    ).values('producto__descripcion', 'producto__cod_venta').annotate(
+        total_vendido=Sum('cantidad')
+    ).order_by('-total_vendido')[:5]
+
+    # 3. Distribución de Stock por Ubicación
+    stock_por_ubicacion = Stock.objects.select_related('ubicacion').values(
+        'ubicacion__nombre'
+    ).annotate(
+        total_stock=Sum('cantidad')
+    ).order_by('-total_stock')
+
+    data = {
+        'ventas_mensuales': [
+            {'mes': item['mes'].strftime('%Y-%m'), 'total': item['total_ventas']} for item in ventas_mensuales
+        ],
+        'top_vendidos': list(top_vendidos),
+        'stock_por_ubicacion': list(stock_por_ubicacion),
+    }
+
+    return Response(data)
+
+# ... (código anterior) ...
+
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+@api_view(['POST'])
+def api_login(request):
+    """
+    Endpoint para el inicio de sesión de usuarios.
+    Espera 'username' y 'password' en el cuerpo de la petición.
+    """
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    if not username or not password:
+        return Response({'error': 'Se requieren nombre de usuario y contraseña.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = authenticate(request, username=username, password=password)
+
+    if user is not None:
+        login(request, user)
+        # Devolvemos información básica del usuario
+        return Response({
+            'message': 'Inicio de sesión exitoso.',
+            'user': {
+                'username': user.username,
+                'email': user.email,
+                'perfil': user.perfil,
+            }
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Credenciales inválidas.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+def api_logout(request):
+    """
+    Endpoint para cerrar la sesión del usuario.
+    """
+    logout(request)
+    return Response({'message': 'Sesión cerrada exitosamente.'}, status=status.HTTP_200_OK)
+
+
+# ... (código anterior) ...
+from django.db.models import Q
+from datetime import datetime
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import MovimientoInventario, Producto, Ubicacion
+
+@api_view(['GET'])
+def reportes_avanzados(request):
+    """
+    Endpoint para generar reportes avanzados con filtros dinámicos.
+    Acepta parámetros de consulta (query params) para filtrar.
+    """
+    queryset = MovimientoInventario.objects.select_related('producto', 'usuario', 'ubicacion_origen', 'ubicacion_destino').all()
+
+    # --- Filtros Dinámicos ---
+    # Filtro por rango de fechas
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+    if fecha_inicio:
+        queryset = queryset.filter(fecha_hora__gte=fecha_inicio)
+    if fecha_fin:
+        queryset = queryset.filter(fecha_hora__lte=fecha_fin)
+
+    # Filtro por producto (búsqueda parcial)
+    producto_id = request.GET.get('producto_id')
+    if producto_id:
+        queryset = queryset.filter(producto__cod_venta__icontains=producto_id)
+
+    # Filtro por tipo de movimiento
+    tipo_movimiento = request.GET.get('tipo_movimiento')
+    if tipo_movimiento:
+        queryset = queryset.filter(tipo=tipo_movimiento)
+
+    # Filtro por ubicación (origen o destino)
+    ubicacion_id = request.GET.get('ubicacion_id')
+    if ubicacion_id:
+         queryset = queryset.filter(
+            Q(ubicacion_origen__id=ubicacion_id) | Q(ubicacion_destino__id=ubicacion_id)
+        )
+
+    # Ordenar por fecha descendente
+    queryset = queryset.order_by('-fecha_hora')
+
+    # Serializar los resultados
+    # Usamos un serializador simple para este reporte
+    data = [
+        {
+            "fecha_hora": mov.fecha_hora.strftime('%Y-%m-%d %H:%M:%S'),
+            "producto_cod": mov.producto.cod_venta,
+            "producto_desc": mov.producto.descripcion,
+            "tipo_display": mov.get_tipo_display(),
+            "cantidad": mov.cantidad,
+            "usuario": mov.usuario.username if mov.usuario else 'Sistema',
+            "origen": mov.ubicacion_origen.nombre if mov.ubicacion_origen else 'N/A',
+            "destino": mov.ubicacion_destino.nombre if mov.ubicacion_destino else 'N/A',
+            "detalle": mov.detalle,
+        }
+        for mov in queryset
+    ]
+
+    return Response(data)
+
+@api_view(['GET'])
+def reportes_avanzados(request):
+    """
+    Endpoint para generar reportes avanzados con filtros dinámicos.
+    """
+    print("--- INICIO DE REPORTE ---")
+    print("Parámetros recibidos:", request.GET)
+
+    """
+    Endpoint para generar reportes avanzados con filtros dinámicos.
+    """
+    queryset = MovimientoInventario.objects.select_related('producto', 'usuario', 'ubicacion_origen', 'ubicacion_destino').all()
+
+    # --- Filtros Dinámicos ---
+    # Filtro por rango de fechas (CORREGIDO)
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
+
+    if fecha_inicio_str:
+        # Convertimos el string a un objeto de fecha aware (consciente de la zona horaria)
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        queryset = queryset.filter(fecha_hora__date__gte=fecha_inicio)
+
+    if fecha_fin_str:
+        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+        queryset = queryset.filter(fecha_hora__date__lte=fecha_fin)
+
+
+    # Filtro por producto (búsqueda parcial)
+    producto_id = request.GET.get('producto_id')
+    if producto_id:
+        queryset = queryset.filter(producto__cod_venta__icontains=producto_id)
+
+    # Filtro por tipo de movimiento
+    tipo_movimiento = request.GET.get('tipo_movimiento')
+    print(f"Filtro de tipo recibido: {tipo_movimiento}")
+    if tipo_movimiento:
+        queryset = queryset.filter(tipo=tipo_movimiento)
+
+    # Filtro por ubicación (origen o destino)
+    ubicacion_id = request.GET.get('ubicacion_id')
+    if ubicacion_id:
+         queryset = queryset.filter(
+            Q(ubicacion_origen__id=ubicacion_id) | Q(ubicacion_destino__id=ubicacion_id)
+        )
+
+    # Ordenar por fecha descendente
+    queryset = queryset.order_by('-fecha_hora')
+    
+    print(f"Cantidad de resultados encontrados: {queryset.count()}")
+    print("--- FIN DE REPORTE ---")
+
+    # Serializar los resultados
+    # Usamos un serializador simple para este reporte
+    data = [
+        {
+            "id": mov.id,
+            "fecha_hora": mov.fecha_hora.strftime('%Y-%m-%d %H:%M:%S'),
+            "producto_cod": mov.producto.cod_venta,
+            "producto_desc": mov.producto.descripcion,
+            "tipo_display": mov.get_tipo_display(),
+            "cantidad": mov.cantidad,
+            "usuario": mov.usuario.username if mov.usuario else 'Sistema',
+            "origen": mov.ubicacion_origen.nombre if mov.ubicacion_origen else 'N/A',
+            "destino": mov.ubicacion_destino.nombre if mov.ubicacion_destino else 'N/A',
+            "detalle": mov.detalle,
+        }
+        for mov in queryset
+    ]
+
+    return Response(data)
