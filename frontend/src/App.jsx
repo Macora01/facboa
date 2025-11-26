@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import ProductList from './components/ProductList';
 import ProductDetail from './components/ProductDetail';
 import ReportsPage from './components/ReportsPage';
+import UserManagementPage from './components/UserManagementPage'; 
 import Login from './components/Login';
 import theme from './theme/theme';
 import './App.css';
@@ -43,6 +44,7 @@ function App() {
                       <Route path="/productos" element={<ProductList />} />
                       <Route path="/producto/:cod_venta" element={<ProductDetail />} />
                       <Route path="/reportes" element={<ReportsPage />} />
+                       <Route path="/user-management" element={<UserManagementPage />} />
                     </Routes>
                   </PrivateRoute>
                 }

@@ -3,6 +3,9 @@ from .models import Producto, Ubicacion, Stock, MovimientoInventario
 from .serializers import ProductoSerializer, UbicacionSerializer, MovimientoInventarioSerializer
 from django.utils import timezone
 from datetime import datetime
+from .models import Usuario
+from .serializers import UsuarioSerializer
+from rest_framework import viewsets, permissions
 
 # Vista para listar todos los productos
 class ProductoListAPIView(generics.ListAPIView):
@@ -539,3 +542,13 @@ def reportes_avanzados(request):
     ]
 
     return Response(data)
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para el modelo de Usuario.
+    Proporciona las operaciones CRUD (Create, Read, Update, Delete).
+    """
+    queryset = Usuario.objects.all().order_by('-date_joined') 
+    serializer_class = UsuarioSerializer
+    # Solo los usuarios administradores pueden acceder a este ViewSet.
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]

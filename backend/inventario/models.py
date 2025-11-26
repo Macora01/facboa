@@ -20,29 +20,27 @@ class Usuario(AbstractUser):
         default=PERFIL_VISITA
     )
 
-    # --- INICIO DE LA SOLUCIÓN ---
-    # Añadimos 'related_name' para evitar el conflicto de nombres con el modelo User por defecto.
+    # Añade estas líneas para solucionar el problema de grupos/permisos
     groups = models.ManyToManyField(
-        Group, 
+        'auth.Group', 
         verbose_name='groups', 
         blank=True, 
         help_text='The groups this user belongs to.', 
-        related_name="usuario_set",  # <-- Nombre único para la relación inversa
+        related_name="usuario_set", 
         related_query_name="usuario",
     )
     user_permissions = models.ManyToManyField(
-        Permission, 
+        'auth.Permission', 
         verbose_name='user permissions', 
         blank=True, 
         help_text='Specific permissions for this user.', 
-        related_name="usuario_permissions_set", # <-- Nombre único para la relación inversa
+        related_name="usuario_permissions_set", 
         related_query_name="usuario_permission",
     )
-    # --- FIN DE LA SOLUCIÓN ---
 
     def __str__(self):
         return self.username
-
+    
 class Ubicacion(models.Model):
     """
     Representa una ubicación física o lógica en el sistema.

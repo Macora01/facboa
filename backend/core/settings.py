@@ -43,8 +43,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -134,5 +134,38 @@ AUTH_USER_MODEL = 'inventario.Usuario'
 # Configuración de CORS para desarrollo
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8000",
+    "http://localhost:5173",
+    "http://127.0.0.1:8000",
+    "http://localhost:5173",
+    "http://127.0.0.1:8000",
 ]
+
+# Añade esta configuración para manejar credenciales
+CORS_ALLOW_CREDENTIALS = True
+
+# Configuración de la sesión
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_SAVE_EVERY_REQUEST = True
+
+# ... (última línea del archivo) ...
+
+# Configuración de Simple JWT
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # El token expira en 1 hora
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # El token de refresco expira en 7 días
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': 'tu-clave-secreta-muy-larga-y-aleatoria', # ¡CAMBIA ESTO! Genera una nueva.
+    'VERIFYING_KEY': 'tu-clave-secreta-muy-larga-y-aleatoria', # ¡CAMBIA ESTO!
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
+    'PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
+}

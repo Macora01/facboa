@@ -27,6 +27,10 @@ function AppBar() {
           </Typography>
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+               {user.perfil === 'admin' && (
+                <Button color="inherit" onClick={() => navigate('/user-management')}>
+                  Usuarios
+                </Button>)}
               <Button color="inherit" onClick={() => navigate('/reportes')}>
                 Reportes
               </Button>

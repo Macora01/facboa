@@ -5,11 +5,52 @@ from .models import Usuario, Ubicacion, Producto, Stock, MovimientoInventario
 # --- Paso 1: Registrar nuestro modelo de usuario personalizado ---
 # Ya no necesitamos desregistrar el User por defecto.
 
+# Desregistrar el User por defecto y registrar nuestro Usuario
+from django.contrib.auth.models import User
+# ... (importaciones) ...
+
+# Desregistrar el User por defecto de forma segura
+try:
+    from django.contrib.auth.models import User
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    # Si el modelo User no estaba registrado, no hacemos nada.
+    pass
+
 @admin.register(Usuario)
 class UsuarioAdmin(UserAdmin):
-    list_display = ('username', 'email', 'perfil', 'is_staff')
+    # Campos que se muestran en la lista de usuarios
+    list_display = ('username', 'email', 'perfil', 'is_staff', 'is_active')
+    # Filtros que aparecen en la barra lateral
     list_filter = ('perfil', 'is_staff', 'is_superuser')
+    # Campos por los que se puede buscar
     search_fields = ('username', 'email')
+
+    # --- ESTA ES LA PARTE CLAVE ---
+    # Agrupación de campos para el formulario de edición y creación
+    fieldsets = (
+        (None, {
+            'fields': ('username', 'password')
+        }),
+        ('Información Personal', {
+            'fields': ('first_name', 'last_name', 'email')
+        }),
+        ('Permisos y Perfil', {
+            'fields': ('perfil', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+    )
+    # El campo 'password' se manejará automáticamente para la creación
+    add_fieldsets = (
+        (None, {
+            'fields': ('username', 'password')
+        }),
+        ('Información Personal', {
+            'fields': ('first_name', 'last_name', 'email')
+        }),
+        ('Permisos y Perfil', {
+            'fields': ('perfil', 'is_active', 'is_staff', 'is_superuser')
+        }),
+    )
 
 # --- Paso 2: Registrar los modelos de nuestro inventario ---
 
