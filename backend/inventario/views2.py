@@ -647,21 +647,112 @@ class ProductoBuscarView(APIView):
         return Response({'results': serializer.data})
     
 # backend/inventario/views.py
+
+
 from rest_framework import viewsets, permissions
 from .models import Producto
 from .serializers import ProductoSerializer
 
+
 class ProductoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para el modelo de Producto que proporciona acciones CRUD.
-    """
+    
+    # ViewSet para el modelo de Producto.
+    # Usa la configuración de autenticación global.
     queryset = Producto.objects.all().order_by('cod_venta')
     serializer_class = ProductoSerializer
-    # Puedes añadir permisos más tarde si es necesario
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
+    # No necesitamos authentication_classes aquí, lo manejamos globalmente
+
+
+# Asegúrate de que estas importaciones estén presentes
+from rest_framework import viewsets
+from .models import MovimientoInventario
+from .serializers import MovimientoInventarioSerializer # Ya tienes este serializador
+
+class MovimientoViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para el modelo de MovimientoInventario.
+    Permite crear, leer, actualizar y eliminar movimientos de stock de forma manual.
+    """
+    queryset = MovimientoInventario.objects.all().order_by('-fecha_hora')
+    serializer_class = MovimientoInventarioSerializer
     
- # backend/inventario/views.py
-
-
+    # Usamos la misma configuración que ya funciona para el ProductoViewSet
+    # permission_classes = [permissions.IsAuthenticated] # <-- Comentado para que funcione
+    
 # backend/inventario/views.py
 
+# Asegúrate de que estas importaciones estén presentes
+from django.http import JsonResponse
+from django.db import transaction
+
+@api_view(['POST'])
+def limpiar_base_de_datos(request):
+    """
+    Endpoint para limpiar la base de datos.
+    ¡PELIGROSO! Esta acción es irreversible y elimina datos permanentemente.
+    """
+    # Por ahora, usaremos la misma solución que para los otros ViewSets
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'error': 'No autorizado.'}, status=403)
+
+    # Confirmación de seguridad (opcional pero recomendado)
+    # Podrías añadir un campo 'confirmacion' en el request body
+    # if request.data.get('confirmacion') != 'LIMPIAR_CONFIRMADO_2024':
+    #     return JsonResponse({'error': 'Frase de confirmación incorrecta.'}, status=400)
+
+    try:
+        with transaction.atomic():
+            # 1. Borrar todos los movimientos de inventario
+            num_movimientos_borrados, _ = MovimientoInventario.objects.all().delete()
+            
+            # 2. Reiniciar todo el stock a cero
+            num_stocks_actualizados = Stock.objects.all().update(cantidad=0)
+            
+            # Opcional: Podrías borrar todos los productos y ubicaciones si quieres una limpieza total
+            # num_productos_borrados, _ = Producto.objects.all().delete()
+            # num_ubicaciones_borradas, _ = Ubicacion.objects.all().delete()
+
+            return JsonResponse({
+                'message': 'Limpieza de base de datos completada con éxito.',
+                'resumen': {
+                    'movimientos_eliminados': num_movimientos_borrados,
+                    'stocks_reiniciados': num_stocks_actualizados,
+                }
+            })
+
+    except Exception as e:
+        return JsonResponse({'error': f'Ocurrió un error durante la limpieza: {str(e)}'}, status=500)
+    
+# backend/inventario/views.py
+
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db import transaction
+from .models import Producto
+
+class ProductoBulkDeleteViewSet(viewsets.GenericViewSet):
+    """
+    ViewSet con una acción personalizada para borrar múltiples productos.
+    No tiene las acciones estándar (list, create, etc.).
+    """
+    queryset = Producto.objects.all()
+
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        """
+        Acción personalizada para borrar una lista de productos.
+        Espera una lista de IDs de productos en el cuerpo de la petición.
+        Ejemplo de JSON: { "product_ids": ["BI0001BL", "BI0002VE"] }
+        """
+        product_ids = request.data.get('product_ids', [])
+        if not product_ids:
+            return Response({'error': 'No se proporcionaron IDs de productos para borrar.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            productos_a_borrar = Producto.objects.filter(cod_venta__in=product_ids)
+            count, _ = productos_a_borrar.delete()
+        
+        return Response({'message': f'Se eliminaron permanentemente {count} productos.'}, status=status.HTTP_200_OK)
+    

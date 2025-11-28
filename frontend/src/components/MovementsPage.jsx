@@ -16,9 +16,10 @@ import {
   MenuItem,
   CircularProgress,
 } from '@mui/material';
-import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Add';
+import { DataGrid } from '@mui/x-data-grid';
+
+// Importamos el nuevo componente para la carga de CSV
+import CsvUploadSection from './CsvUploadSection';
 
 // Opciones para el campo de tipo de movimiento, deben coincidir con el backend
 const TIPO_MOVIMIENTO_OPCIONES = [
@@ -36,7 +37,7 @@ function MovementsPage() {
   const [ubicaciones, setUbicaciones] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Estado para el formulario de crear movimiento
+  // Estado para el formulario de crear movimiento manual
   const [newMovement, setNewMovement] = useState({
     tipo: '',
     producto: '',
@@ -45,6 +46,7 @@ function MovementsPage() {
     ubicacion_destino: '',
     detalle: '',
   });
+  const [createLoading, setCreateLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -73,7 +75,7 @@ function MovementsPage() {
       alert('Por favor, completa los campos obligatorios: Tipo, Producto y Cantidad.');
       return;
     }
-    setLoading(true);
+    setCreateLoading(true);
     try {
       await axios.post('http://127.0.0.1:8000/api/movimientos/', newMovement);
       // Limpiar el formulario y recargar la lista
@@ -92,7 +94,7 @@ function MovementsPage() {
       console.error("Error al crear el movimiento:", error);
       alert('Hubo un error al crear el movimiento.');
     } finally {
-      setLoading(false);
+      setCreateLoading(false);
     }
   };
 
@@ -105,6 +107,7 @@ function MovementsPage() {
     { field: 'ubicacion_origen_nombre', headerName: 'Origen', minWidth: 150, flex: 1 },
     { field: 'ubicacion_destino_nombre', headerName: 'Destino', minWidth: 150, flex: 1 },
     { field: 'detalle', headerName: 'Detalle', minWidth: 200, flex: 2 },
+
   ];
 
   return (
@@ -113,10 +116,13 @@ function MovementsPage() {
         Gestión de Movimientos de Inventario
       </Typography>
 
-      {/* Formulario para crear un nuevo movimiento */}
+      {/* Sección para cargar archivos CSV */}
+      <CsvUploadSection />
+
+      {/* Formulario para crear un nuevo movimiento manual */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Crear Nuevo Movimiento
+          Crear Nuevo Movimiento Manual
         </Typography>
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <FormControl fullWidth>
@@ -134,7 +140,7 @@ function MovementsPage() {
               ))}
             </Select>
           </FormControl>
-          
+
           {/* Aquí irían los selectores de producto y ubicaciones usando Autocomplete de MUI */}
           {/* Por simplicidad, usaremos TextField por ahora */}
           <TextField
@@ -165,10 +171,10 @@ function MovementsPage() {
           <Button
             variant="contained"
             onClick={handleCreateMovement}
-            disabled={loading}
+            disabled={createLoading}
             sx={{ alignSelf: 'flex-start' }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear Movimiento'}
+            {createLoading ? <CircularProgress size={24} color="inherit" /> : 'Crear Movimiento'}
           </Button>
         </Box>
       </Paper>

@@ -7,7 +7,7 @@ import axios from 'axios';
 import AppBar from './components/AppBar';
 import Dashboard from './components/Dashboard';
 import ProductSearchPage from './components/ProductSearchPage';
-// import ProductList from './components/ProductList';
+import ProductList from './components/ProductList';
 import ProductDetail from './components/ProductDetail';
 import ReportsPage from './components/ReportsPage';
 import UserManagementPage from './components/UserManagementPage'; 

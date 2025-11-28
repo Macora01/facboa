@@ -43,37 +43,38 @@ function AppBar() {
           </Typography>
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button color="inherit" onClick={() => navigate('/dashboard')}>
+                <Button color="inherit" onClick={() => navigate('/dashboard')}>
                 Dashboard
-              </Button>
-              
-              <Button color="inherit" onClick={() => navigate('/movimientos')}>
-                Movimientos
-              </Button>
-              
-              {/* Nuevo enlace a Productos */}
-              <Button color="inherit" onClick={() => navigate('/productos')}>
-                Productos
-              </Button>
-
-              <Button color="inherit" onClick={() => navigate('/reportes')}>
-                Reportes
-              </Button>
-
-              {user.perfil === 'admin' && (
-                <Button color="inherit" onClick={() => navigate('/user-management')}>
-                  Usuarios
                 </Button>
-              )}
+                <Button color="inherit" onClick={() => navigate('/productos')}>
+                Productos
+                </Button>
+                <Button color="inherit" onClick={() => navigate('/movimientos')}>
+                Movimientos
+                </Button>
+                <Button color="inherit" onClick={() => navigate('/reportes')}>
+                Reportes
+                </Button>
 
-              <Typography variant="body1">
-                Hola, {user.username}
-              </Typography>
-              <Button color="inherit" onClick={handleLogout}>
-                Cerrar Sesión
-              </Button>
-            </Box>
-          )}
+                {user.perfil === 'admin' && (
+                <>
+                    <Button color="inherit" onClick={() => navigate('/configuracion')}>
+                    Configuración
+                    </Button>
+                    <Button color="inherit" onClick={() => navigate('/user-management')}>
+                    Usuarios
+                    </Button>
+                </>
+            )}
+
+    <Typography variant="body1">
+      
+    </Typography>
+    <Button color="inherit" onClick={handleLogout}>
+      Cerrar Sesión
+    </Button>
+  </Box>
+)}
         </Toolbar>
       </MuiAppBar>
     </Box>
