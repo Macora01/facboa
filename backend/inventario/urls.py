@@ -10,6 +10,7 @@ router = DefaultRouter()
 # 2. Registramos TODOS los ViewSets en este único router
 router.register(r'usuarios', views.UsuarioViewSet, basename='usuario')
 router.register(r'productos-crud', views.ProductoViewSet)
+router.register(r'movimientos', views.MovimientoViewSet)
 
 # 3. Definimos las URLs de la aplicación
 urlpatterns = [
@@ -25,7 +26,6 @@ urlpatterns = [
     path('login/', views.api_login, name='api_login'),
     path('logout/', views.api_logout, name='api_logout'),
     path('reportes/', views.reportes_avanzados, name='reportes-avanzados'),
-
     # 4. Incluimos las URLs del router UNA SOLA VEZ
     path('', include(router.urls)),
 ]

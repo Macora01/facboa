@@ -47,6 +47,10 @@ function AppBar() {
                 Dashboard
               </Button>
               
+              <Button color="inherit" onClick={() => navigate('/movimientos')}>
+                Movimientos
+              </Button>
+              
               {/* Nuevo enlace a Productos */}
               <Button color="inherit" onClick={() => navigate('/productos')}>
                 Productos

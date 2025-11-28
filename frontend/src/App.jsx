@@ -15,6 +15,7 @@ import Login from './components/Login';
 import theme from './theme/theme';
 import './App.css';
 import { CircularProgress, Box } from '@mui/material';
+import MovementsPage from './components/MovementsPage';
 
 // --- INICIO DE LA CONFIGURACIÓN DE AXIOS ---
 // --- NUEVO BLOQUE DE CONFIGURACIÓN DE AXIOS ---
@@ -104,6 +105,7 @@ function App() {
                       <Route path="/producto/:cod_venta" element={<ProductDetail />} />
                       <Route path="/reportes" element={<ReportsPage />} />
                       <Route path="/user-management" element={<UserManagementPage />} />
+                      <Route path="/movimientos" element={<MovementsPage />} />
                     </Routes>
                   </PrivateRoute>
                 }

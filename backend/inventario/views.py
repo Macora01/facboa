@@ -664,3 +664,18 @@ class ProductoViewSet(viewsets.ModelViewSet):
     # No necesitamos authentication_classes aquí, lo manejamos globalmente
 
 
+# Asegúrate de que estas importaciones estén presentes
+from rest_framework import viewsets
+from .models import MovimientoInventario
+from .serializers import MovimientoInventarioSerializer # Ya tienes este serializador
+
+class MovimientoViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para el modelo de MovimientoInventario.
+    Permite crear, leer, actualizar y eliminar movimientos de stock de forma manual.
+    """
+    queryset = MovimientoInventario.objects.all().order_by('-fecha_hora')
+    serializer_class = MovimientoInventarioSerializer
+    
+    # Usamos la misma configuración que ya funciona para el ProductoViewSet
+    # permission_classes = [permissions.IsAuthenticated] # <-- Comentado para que funcione

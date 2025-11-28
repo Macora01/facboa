@@ -33,7 +33,7 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MovimientoInventario
-        fields = ('fecha_hora', 'producto', 'tipo_display', 'cantidad', 'usuario', 'ubicacion_origen', 'ubicacion_destino', 'detalle')
+        fields = ('id','fecha_hora', 'producto', 'tipo_display', 'cantidad', 'usuario', 'ubicacion_origen', 'ubicacion_destino', 'detalle')
         # Ordena los resultados por fecha, del más reciente al más antiguo
         read_only_fields = ('fecha_hora',)
         
