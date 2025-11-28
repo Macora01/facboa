@@ -144,6 +144,11 @@ CORS_ALLOWED_ORIGINS = [
 # Añade esta configuración para manejar credenciales
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 # Configuración de la sesión
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_SAVE_EVERY_REQUEST = True
@@ -169,3 +174,16 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
     'PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
 }
+
+
+
+SESSION_COOKIE_DOMAIN = None
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',         # 1. Intenta con Sesión (la que queremos)
+        'rest_framework_simplejwt.authentication.JWTAuthentication', # 2. Si no, intenta con JWT
+    ]
+}
+
+

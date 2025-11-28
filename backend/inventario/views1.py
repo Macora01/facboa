@@ -647,20 +647,21 @@ class ProductoBuscarView(APIView):
         return Response({'results': serializer.data})
     
 # backend/inventario/views.py
-
-
 from rest_framework import viewsets, permissions
 from .models import Producto
 from .serializers import ProductoSerializer
 
-
 class ProductoViewSet(viewsets.ModelViewSet):
-    
-    # ViewSet para el modelo de Producto.
-    # Usa la configuración de autenticación global.
+    """
+    ViewSet para el modelo de Producto que proporciona acciones CRUD.
+    """
     queryset = Producto.objects.all().order_by('cod_venta')
     serializer_class = ProductoSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-    # No necesitamos authentication_classes aquí, lo manejamos globalmente
+    # Puedes añadir permisos más tarde si es necesario
+    permission_classes = [permissions.IsAuthenticated
+    
+ # backend/inventario/views.py
 
+
+# backend/inventario/views.py
 

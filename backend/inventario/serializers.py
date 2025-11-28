@@ -4,7 +4,7 @@ from .models import Producto, Ubicacion
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
-        fields = '__all__' # Expone todos los campos del modelo
+        fields = ['cod_venta', 'id_fabrica', 'descripcion', 'precio', 'costo']
 
 class UbicacionSerializer(serializers.ModelSerializer):
     class Meta:
